@@ -1,0 +1,19 @@
+syntax = "proto3";
+package echopb;
+
+message EchoRequest {
+    int32 index = 1;
+    string msg = 2;
+}
+
+message EchoReply {
+    int32 index = 1;
+    string msg = 2;
+}
+
+service EchoService {
+    rpc Echo (EchoRequest) returns (EchoReply) {}
+    rpc Trico (EchoRequest) returns (stream EchoReply) {}
+    rpc Sink (stream EchoRequest) returns (EchoReply) {}
+    rpc Chat (stream EchoRequest) returns (stream EchoReply) {}
+}
