@@ -1,6 +1,8 @@
 syntax = "proto3";
 package echopb;
 
+import "google/api/annotations.proto";
+
 message EchoRequest {
     int32 index = 1;
     string msg = 2;
@@ -12,8 +14,32 @@ message EchoReply {
 }
 
 service EchoService {
-    rpc Echo (EchoRequest) returns (EchoReply) {}
-    rpc Trico (EchoRequest) returns (stream EchoReply) {}
-    rpc Sink (stream EchoRequest) returns (EchoReply) {}
-    rpc Chat (stream EchoRequest) returns (stream EchoReply) {}
+    rpc Echo (EchoRequest) returns (EchoReply) {
+        option (google.api.http) = {
+            post: "/echo/api/v1/echo"
+            body: "*"
+        };
+    }
+
+    rpc Trico (EchoRequest) returns (stream EchoReply) {
+        option (google.api.http) = {
+            post: "/echo/api/v1/trico"
+            body: "*"
+        };
+
+    }
+
+    rpc Sink (stream EchoRequest) returns (EchoReply) {
+        option (google.api.http) = {
+            post: "/echo/api/v1/sink"
+            body: "*"
+        };
+    }
+
+    rpc Chat (stream EchoRequest) returns (stream EchoReply) {
+        option (google.api.http) = {
+            post: "/echo/api/v1/chat"
+            body: "*"
+        };
+    }
 }
