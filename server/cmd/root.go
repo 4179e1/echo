@@ -17,8 +17,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+	"strings"
+
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -26,18 +30,19 @@ import (
 
 var (
 	cfgFile string
+	pidFile string
+)
+
+var (
+	logger *zap.Logger
+	sugar  *zap.SugaredLogger
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "server",
 	Short: "The Echo Server",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `The Echo Server for GRPC demo, with HTTP Gateway & Swagger UI support`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -59,10 +64,20 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/echo-server.yaml)")
-	rootCmd.PersistentFlags().String("pid-file", "/var/run/echo.pid", "the pid file")
+	// Global config
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/echo-server.yaml)")
 
-	viper.BindPFlag("global.pif-file", rootCmd.Flags().Lookup("pif-file"))
+	// server config
+	rootCmd.PersistentFlags().String("server.pidfile", "/var/run/echo.pid", "the pid file")
+	viper.BindPFlag("Server.PidFile", rootCmd.PersistentFlags().Lookup("server.pidfile"))
+
+	// log config
+	rootCmd.PersistentFlags().Bool("log.development", false, "is development config?")
+	rootCmd.PersistentFlags().String("log.level", "debug", "log level")
+	rootCmd.PersistentFlags().StringSlice("log.outputpaths", []string{"stdout"}, "output path")
+	viper.BindPFlag("Log.Development", rootCmd.PersistentFlags().Lookup("log.development"))
+	viper.BindPFlag("Log.Level", rootCmd.PersistentFlags().Lookup("log.level"))
+	viper.BindPFlag("Log.OutputPaths", rootCmd.PersistentFlags().Lookup("log.outputpaths"))
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -82,16 +97,48 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".server" (without extension).
+		// Search config in home directory with name "echo-server" (without extension).
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
 		viper.SetConfigName("echo-server")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix("ECHO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+
+	initLogger()
+
+	sugar.Debug("Hello Echo Server...")
+}
+
+func initLogger() {
+	var level zapcore.Level
+	// TODO: valid Log.Level input
+	level.Set(viper.GetString("Log.Level"))
+	atom := zap.NewAtomicLevelAt(level)
+
+	isDevelopment := viper.GetBool("Log.Development")
+	var cfg zap.Config
+	if isDevelopment {
+		cfg = zap.NewDevelopmentConfig()
+
+	} else {
+		cfg = zap.NewProductionConfig()
+	}
+
+	cfg.Level = atom
+	cfg.OutputPaths = viper.GetStringSlice("Log.OutputPaths")
+
+	logger, err := cfg.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	sugar = logger.Sugar()
 }

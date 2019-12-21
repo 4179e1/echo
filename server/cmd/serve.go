@@ -26,16 +26,12 @@ import (
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the Echo Server",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `Start the Echo Server`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("serve called")
 		fmt.Println("args: ", args)
-		fmt.Println("pidFile:", viper.GetString("global.pid-file"))
+		fmt.Println("PidFile:", viper.GetString("Server.PidFile"))
+		fmt.Printf("Listen %s:%s\n", viper.GetString("Server.Host"), viper.GetString("Server.Port"))
 	},
 }
 
@@ -52,6 +48,9 @@ func init() {
 	// is called directly, e.g.:
 	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	//serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	serveCmd.Flags().String("host", "0.0.0.0", "bind address")
-	serveCmd.Flags().IntP("port", "p", 8081, "bind port")
+	serveCmd.Flags().StringP("server.host", "H", "0.0.0.0", "bind address")
+	serveCmd.Flags().IntP("server.port", "P", 8081, "bind port")
+
+	viper.BindPFlag("Server.Host", serveCmd.Flags().Lookup("server.host"))
+	viper.BindPFlag("Server.Port", serveCmd.Flags().Lookup("server.port"))
 }

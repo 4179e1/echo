@@ -1,2 +1,9 @@
-global:
-  pid-file: /var/run/my-echo.pid
+Server:
+  PidFile: /var/run/my-echo.pid
+
+Log:
+  Development: true
+  Level: "info"
+  OutputPaths:
+    - "stdout"
+    #- "./trash.log"
