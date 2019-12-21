@@ -1,0 +1,2 @@
+global:
+  pid-file: /var/run/my-echo.pid
