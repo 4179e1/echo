@@ -18,8 +18,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"strings"
 
 	pb "github.com/4179e1/echo/echopb"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -35,7 +39,7 @@ var serveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("serve called")
 		fmt.Println("args: ", args)
-		fmt.Println("PidFile:", viper.GetString("Server.PidFile"))
+		fmt.Println("PidFile:", viper.GetString("Global.PidFile"))
 		fmt.Printf("Listen %s:%s\n", viper.GetString("Server.Host"), viper.GetString("Server.Port"))
 		serve()
 	},
@@ -54,8 +58,9 @@ func init() {
 	// is called directly, e.g.:
 	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	//serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
 	serveCmd.Flags().StringP("server.host", "H", "0.0.0.0", "bind address")
-	serveCmd.Flags().IntP("server.port", "P", 8081, "bind port")
+	serveCmd.Flags().IntP("server.port", "P", 8080, "bind port")
 
 	viper.BindPFlag("Server.Host", serveCmd.Flags().Lookup("server.host"))
 	viper.BindPFlag("Server.Port", serveCmd.Flags().Lookup("server.port"))
@@ -84,6 +89,16 @@ func newEchoServer() *echoService {
 	return new(echoService)
 }
 
+func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+			grpcServer.ServeHTTP(w, r)
+		} else {
+			otherHandler.ServeHTTP(w, r)
+		}
+	})
+}
+
 func serve() {
 	// TODO: certs
 	opts := []grpc.ServerOption{}
@@ -91,4 +106,37 @@ func serve() {
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterEchoServiceServer(grpcServer, newEchoServer())
 
+	// TODO: dial opts with certs
+	dopts := []grpc.DialOption{grpc.WithInsecure()}
+
+	mux := http.NewServeMux()
+
+	ctx := context.Background()
+	gwmux := runtime.NewServeMux()
+	endpoint := fmt.Sprintf("127.0.0.1:%s", viper.GetString("Server.Port"))
+	err := pb.RegisterEchoServiceHandlerFromEndpoint(ctx, gwmux, endpoint, dopts)
+	if err != nil {
+		panic(err)
+	}
+
+	mux.Handle("/", gwmux)
+
+	//hostPort := fmt.Sprintf("%s:%s", viper.GetString("Server.Host"), viper.GetString("Server.Port"))
+	hostPort := endpoint
+	conn, err := net.Listen("tcp", hostPort)
+	if err != nil {
+		panic(err)
+	}
+
+	srv := &http.Server{
+		Addr:    hostPort,
+		Handler: grpcHandlerFunc(grpcServer, mux),
+	}
+
+	err = srv.Serve(conn)
+	if err != nil {
+		panic(err)
+	}
+
+	return
 }

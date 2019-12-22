@@ -19,17 +19,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/4179e1/echo/common"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-
-	"github.com/4179e1/echo/common"
-	"github.com/spf13/viper"
 )
 
-var (
-	cfgFile string
-	pidFile string
-)
+var cfgFile string
 
 var (
 	logger *zap.Logger
@@ -38,9 +33,14 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "server",
-	Short: "The Echo Server",
-	Long:  `The Echo Server for GRPC demo, with HTTP Gateway & Swagger UI support`,
+	Use:   "client",
+	Short: "A brief description of your application",
+	Long: `A longer description that spans multiple lines and likely contains
+examples and usage of using your application. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -62,24 +62,13 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	// Global config
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/echo-server.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/echo-client.yaml)")
 
-	// server config
-	rootCmd.PersistentFlags().String("global.pidfile", "/var/run/echo.pid", "the pid file")
-	viper.BindPFlag("Global.PidFile", rootCmd.PersistentFlags().Lookup("global.pidfile"))
-
-	// log config
 	common.BindRootFlag(rootCmd)
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-
-	common.InitConfig(cfgFile, "echo-server", &logger, &sugar)
-	sugar.Debug("Hello Echo Server...")
+	common.InitConfig(cfgFile, "echo-client", &logger, &sugar)
+	sugar.Debug("Hello Echo Client...")
 }

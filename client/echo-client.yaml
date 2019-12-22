@@ -1,10 +1,7 @@
-Global:
-  PidFile: "/var/run/my-echo.pid"
-
 Server:
   Host: 127.0.0.1
   Port: 8080
-
+  
 Log:
   Development: true
   Level: "info"
