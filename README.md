@@ -14,5 +14,6 @@ e.g.
 
 # Reference
 
-[gRPC with REST and Open APIs](https://grpc.io/blog/coreos/)
-[grpc-gateway-example](https://github.com/philips/grpc-gateway-example)
+- [gRPC go Quick Start](https://grpc.io/docs/quickstart/go/)
+- [gRPC with REST and Open APIs](https://grpc.io/blog/coreos/)
+- [grpc-gateway-example](https://github.com/philips/grpc-gateway-example)

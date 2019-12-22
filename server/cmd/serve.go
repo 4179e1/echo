@@ -134,15 +134,21 @@ func serve() {
 		panic(err)
 	}
 
-	srv := &http.Server{
-		Addr:    hostPort,
-		Handler: grpcHandlerFunc(grpcServer, mux),
-	}
-
-	err = srv.Serve(conn)
-	if err != nil {
+	if err := grpcServer.Serve(conn); err != nil {
 		panic(err)
 	}
+
+	/*
+		srv := &http.Server{
+			Addr:    hostPort,
+			Handler: grpcHandlerFunc(grpcServer, mux),
+		}
+
+		err = srv.Serve(conn)
+		if err != nil {
+			panic(err)
+		}
+	*/
 
 	return
 }
