@@ -72,7 +72,13 @@ type echoService struct {
 }
 
 func (*echoService) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
+	//return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
+	reply := pb.EchoReply{
+		Index: 1,
+		Msg:   "hello",
+	}
+
+	return &reply, nil
 }
 func (*echoService) Trico(req *pb.EchoRequest, srv pb.EchoService_TricoServer) error {
 	return status.Errorf(codes.Unimplemented, "method Trico not implemented")
@@ -113,7 +119,7 @@ func serve() {
 
 	ctx := context.Background()
 	gwmux := runtime.NewServeMux()
-	endpoint := fmt.Sprintf("127.0.0.1:%s", viper.GetString("Server.Port"))
+	endpoint := fmt.Sprintf("localhost:%s", viper.GetString("Server.Port"))
 	err := pb.RegisterEchoServiceHandlerFromEndpoint(ctx, gwmux, endpoint, dopts)
 	if err != nil {
 		panic(err)
