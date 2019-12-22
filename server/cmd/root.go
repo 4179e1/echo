@@ -73,10 +73,10 @@ func init() {
 
 	// log config
 	rootCmd.PersistentFlags().Bool("log.development", false, "is development config?")
-	rootCmd.PersistentFlags().String("log.level", "debug", "log level")
+	rootCmd.PersistentFlags().String("log.level", "info", "log level")
 	rootCmd.PersistentFlags().StringSlice("log.outputpaths", []string{"stdout"}, "output path")
 	viper.BindPFlag("Log.Development", rootCmd.PersistentFlags().Lookup("log.development"))
-	viper.BindPFlag("Log.Level", rootCmd.PersistentFlags().Lookup("log.level"))
+	//viper.BindPFlag("Log.Level", rootCmd.PersistentFlags().Lookup("log.level"))
 	viper.BindPFlag("Log.OutputPaths", rootCmd.PersistentFlags().Lookup("log.outputpaths"))
 
 	// Cobra also supports local flags, which will only run
@@ -110,6 +110,8 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		panic(err)
 	}
 
 	initLogger()

@@ -16,10 +16,15 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	pb "github.com/4179e1/echo/echopb"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // serveCmd represents the serve command
@@ -32,6 +37,7 @@ var serveCmd = &cobra.Command{
 		fmt.Println("args: ", args)
 		fmt.Println("PidFile:", viper.GetString("Server.PidFile"))
 		fmt.Printf("Listen %s:%s\n", viper.GetString("Server.Host"), viper.GetString("Server.Port"))
+		serve()
 	},
 }
 
@@ -53,4 +59,36 @@ func init() {
 
 	viper.BindPFlag("Server.Host", serveCmd.Flags().Lookup("server.host"))
 	viper.BindPFlag("Server.Port", serveCmd.Flags().Lookup("server.port"))
+}
+
+// implemented pb.EchoServiceServer interface
+// its methods were copied from echo.pb.go with modification
+type echoService struct {
+}
+
+func (*echoService) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
+}
+func (*echoService) Trico(req *pb.EchoRequest, srv pb.EchoService_TricoServer) error {
+	return status.Errorf(codes.Unimplemented, "method Trico not implemented")
+}
+func (*echoService) Sink(srv pb.EchoService_SinkServer) error {
+	return status.Errorf(codes.Unimplemented, "method Sink not implemented")
+}
+
+func (*echoService) Chat(srv pb.EchoService_ChatServer) error {
+	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+}
+
+func newEchoServer() *echoService {
+	return new(echoService)
+}
+
+func serve() {
+	// TODO: certs
+	opts := []grpc.ServerOption{}
+
+	grpcServer := grpc.NewServer(opts...)
+	pb.RegisterEchoServiceServer(grpcServer, newEchoServer())
+
 }
