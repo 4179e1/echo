@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/4179e1/echo/common"
 	pb "github.com/4179e1/echo/echopb"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 )
 
@@ -39,12 +41,14 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("echo called")
+		hostPort := fmt.Sprintf("%s:%d", viper.GetString("Server.Host"), viper.GetInt("Server.Port"))
+		_, certPool := common.GetCerts(viper.GetString("Server.CertFile"), viper.GetString("Server.KeyFile"))
+		creds := credentials.NewClientTLSFromCert(certPool, hostPort)
 		opts := []grpc.DialOption{
-			grpc.WithInsecure(),
+			grpc.WithTransportCredentials(creds),
 		}
 		//creds := credentials.NewClientTLSFromCert(demoCertPool, "localhost:10000")
 		//opts = append(opts, grpc.WithTransportCredentials(creds))
-		hostPort := fmt.Sprintf("%s:%s", viper.GetString("Server.Host"), viper.GetString("Server.Port"))
 		sugar.Debug("Dialing %s...", hostPort)
 		conn, err := grpc.Dial(hostPort, opts...)
 		if err != nil {
