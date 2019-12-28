@@ -20,6 +20,10 @@ all:
 	    --swagger_out=logtostderr=true:. \
 	    $(PROTO_FILE)
 
+	# generate swagger.pb.go from swagger.go using scripts/includetxt.go
+	go generate .
+
+
 
 deps:
 	go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway

@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -66,11 +67,13 @@ func init() {
 	serveCmd.Flags().IntP("server.port", "P", 8080, "bind port")
 	serveCmd.Flags().String("server.certfile", "/etc/echo/server.pem", "cert file")
 	serveCmd.Flags().String("server.keyfile", "/etc/echo/server.key", "key file")
+	serveCmd.Flags().String("server.swaggerpath", "/etc/echo/swagger", "Swagger File Path")
 
 	viper.BindPFlag("Server.Host", serveCmd.Flags().Lookup("server.host"))
 	viper.BindPFlag("Server.Port", serveCmd.Flags().Lookup("server.port"))
 	viper.BindPFlag("Server.CertFile", serveCmd.Flags().Lookup("server.certfile"))
 	viper.BindPFlag("Server.KeyFile", serveCmd.Flags().Lookup("server.keyfile"))
+	viper.BindPFlag("Server.SwaggerPath", serveCmd.Flags().Lookup("server.swaggerpath"))
 }
 
 // implemented pb.EchoServiceServer interface
@@ -134,6 +137,13 @@ func serve() {
 	})
 	dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
 	mux := http.NewServeMux()
+	serverHandler := http.FileServer(http.Dir(viper.GetString("Server.SwaggerPath")))
+	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui/", serverHandler))
+	mux.HandleFunc("/echo.swagger.json", func(w http.ResponseWriter, req *http.Request) {
+		io.Copy(w, strings.NewReader(pb.EchoSwagger))
+	})
+	//rh := http.RedirectHandler("http://www.qq.com", 307)
+	//mux.Handle("/foo", rh)
 
 	ctx := context.Background()
 	gwmux := runtime.NewServeMux()

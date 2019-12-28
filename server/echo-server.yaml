@@ -2,10 +2,11 @@ Global:
   PidFile: "/var/run/my-echo.pid"
 
 Server:
-  Host: "localhost" 
+  Host: "localhost"
   Port: 8080
   CertFile: "../certs/server.pem"
   KeyFile: "../certs/server.key"
+  SwaggerPath: "./swagger"
 
 Log:
   Development: true
