@@ -16,23 +16,53 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"log"
+	"strings"
 
+	pb "github.com/4179e1/echo/echopb"
 	"github.com/spf13/cobra"
 )
 
 // tricoCmd represents the trico command
 var tricoCmd = &cobra.Command{
 	Use:   "trico",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "trico command",
+	Long:  "trico command",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("trico called")
+		conn := getClientConn()
+		defer conn.Close()
+		client := pb.NewEchoServiceClient(conn)
+
+		separator := " "
+		msg := strings.Join(args, separator)
+
+		data := &pb.EchoRequest{
+			Index: 1,
+			Msg:   msg,
+		}
+
+		sugar.Debug("Sending Requset ", data)
+
+		stream, err := client.Trico(context.Background(), data)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		for {
+			msg, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(msg)
+		}
+
 	},
 }
 

@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,6 +31,4 @@ func InitLogger(logger **zap.Logger, sugar **zap.SugaredLogger) {
 	}
 
 	*sugar = (*logger).Sugar()
-
-	fmt.Println("=============================")
 }

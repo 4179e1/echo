@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/4179e1/echo/common"
 	pb "github.com/4179e1/echo/echopb"
@@ -84,15 +85,30 @@ type echoService struct {
 // curl -k -X POST https://localhost:8080/echo/api/v1/echo
 func (*echoService) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoReply, error) {
 	//return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
-	reply := pb.EchoReply{
-		Index: 1,
-		Msg:   "hello",
+	reply := &pb.EchoReply{
+		Index: req.Index,
+		Msg:   req.Msg,
 	}
 
-	return &reply, nil
+	return reply, nil
 }
 func (*echoService) Trico(req *pb.EchoRequest, srv pb.EchoService_TricoServer) error {
-	return status.Errorf(codes.Unimplemented, "method Trico not implemented")
+	//return status.Errorf(codes.Unimplemented, "method Trico not implemented")
+
+	for i := int32(0); i < 3; i++ {
+		time.Sleep(time.Duration(i) * time.Second)
+		reply := &pb.EchoReply{
+			Index: i + 1,
+			Msg:   req.Msg,
+		}
+
+		if err := srv.Send(reply); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }
 func (*echoService) Sink(srv pb.EchoService_SinkServer) error {
 	return status.Errorf(codes.Unimplemented, "method Sink not implemented")
@@ -142,8 +158,6 @@ func serve() {
 	mux.HandleFunc("/echo.swagger.json", func(w http.ResponseWriter, req *http.Request) {
 		io.Copy(w, strings.NewReader(pb.EchoSwagger))
 	})
-	//rh := http.RedirectHandler("http://www.qq.com", 307)
-	//mux.Handle("/foo", rh)
 
 	ctx := context.Background()
 	gwmux := runtime.NewServeMux()
@@ -154,17 +168,10 @@ func serve() {
 
 	mux.Handle("/", gwmux)
 
-	//hostPort := fmt.Sprintf("%s:%s", viper.GetString("Server.Host"), viper.GetString("Server.Port"))
 	conn, err := net.Listen("tcp", serverAddr)
 	if err != nil {
 		panic(err)
 	}
-
-	/*
-		if err := grpcServer.Serve(conn); err != nil {
-			panic(err)
-		}
-	*/
 
 	srv := &http.Server{
 		Addr:    serverAddr,

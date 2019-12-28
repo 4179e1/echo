@@ -19,51 +19,40 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
-	"github.com/4179e1/echo/common"
 	pb "github.com/4179e1/echo/echopb"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/grpclog"
 )
 
 // echoCmd represents the echo command
 var echoCmd = &cobra.Command{
-	Use:   "echo",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "echo <msg>",
+	Short: "echo command",
+	Long:  "echo command",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("echo called")
-		hostPort := fmt.Sprintf("%s:%d", viper.GetString("Server.Host"), viper.GetInt("Server.Port"))
-		_, certPool := common.GetCerts(viper.GetString("Server.CertFile"), viper.GetString("Server.KeyFile"))
-		creds := credentials.NewClientTLSFromCert(certPool, hostPort)
-		opts := []grpc.DialOption{
-			grpc.WithTransportCredentials(creds),
-		}
-		//creds := credentials.NewClientTLSFromCert(demoCertPool, "localhost:10000")
-		//opts = append(opts, grpc.WithTransportCredentials(creds))
-		sugar.Debug("Dialing %s...", hostPort)
-		conn, err := grpc.Dial(hostPort, opts...)
-		if err != nil {
-			grpclog.Fatalf("fail to dial: %v", err)
-		}
+		conn := getClientConn()
 		defer conn.Close()
 		client := pb.NewEchoServiceClient(conn)
 
-		reply, err := client.Echo(context.Background(), &pb.EchoRequest{Index: 0, Msg: "Hello"})
+		separator := " "
+		msg := strings.Join(args, separator)
+
+		data := &pb.EchoRequest{
+			Index: 1,
+			Msg:   msg,
+		}
+
+		sugar.Debug("Sending Requset ", data)
+
+		reply, err := client.Echo(context.Background(), data)
 		if err != nil {
 			// TODO https://jiajunhuang.com/articles/2019_09_02-go_grpc_handshake.md.html
 			log.Fatalf(err.Error())
 		}
 
-		fmt.Println(reply)
+		fmt.Println(reply.Msg)
 	},
 }
 
