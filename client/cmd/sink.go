@@ -69,8 +69,7 @@ var sinkCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("\r")
-		fmt.Println(reply)
+		fmt.Printf(fmt.Sprintf("\r%s\n", reply))
 	},
 }
 

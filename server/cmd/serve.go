@@ -32,9 +32,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
 )
 
 // serveCmd represents the serve command
@@ -133,7 +131,7 @@ func (*echoService) Sink(srv pb.EchoService_SinkServer) error {
 		}
 
 		if _, err := buffer.WriteString(msg.Msg); err != nil {
-			panic(err)
+			return err
 		}
 	}
 
@@ -146,7 +144,25 @@ func (*echoService) Sink(srv pb.EchoService_SinkServer) error {
 }
 
 func (*echoService) Chat(srv pb.EchoService_ChatServer) error {
-	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+	//return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+
+	for {
+		msg, err := srv.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		reply := &pb.EchoReply{
+			Index: msg.Index,
+			Msg:   fmt.Sprintf("Yes, %s", msg.Msg),
+		}
+		if err := srv.Send(reply); err != nil {
+			return err
+		}
+	}
 }
 
 func newEchoServer() *echoService {

@@ -16,8 +16,14 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
+	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 
+	pb "github.com/4179e1/echo/echopb"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +38,59 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("chat called")
+		conn := getClientConn()
+		defer conn.Close()
+
+		client := pb.NewEchoServiceClient(conn)
+		stream, err := client.Chat(context.Background())
+		if err != nil {
+			panic(err)
+		}
+
+		waitc := make(chan struct{})
+		go func() {
+			for {
+				msg, err := stream.Recv()
+				if err == io.EOF {
+					// read done.
+					close(waitc)
+					return
+				}
+				if err != nil {
+					panic(err)
+				}
+
+				fmt.Printf(fmt.Sprintf("\r< %s\n> ", msg.Msg))
+			}
+		}()
+
+		// Read Stdin
+		reader := bufio.NewReader(os.Stdin)
+		for i := int32(1); ; i++ {
+			fmt.Printf("> ")
+			line, err := reader.ReadString('\n')
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				panic(err)
+			}
+
+			data := &pb.EchoRequest{
+				Index: i,
+				Msg:   strings.TrimSuffix(line, "\n"),
+			}
+
+			if err := stream.Send(data); err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
+
+		}
+
+		stream.CloseSend()
+		<-waitc
+
 	},
 }
 
