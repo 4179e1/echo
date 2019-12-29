@@ -48,7 +48,6 @@ var echoCmd = &cobra.Command{
 
 		reply, err := client.Echo(context.Background(), data)
 		if err != nil {
-			// TODO https://jiajunhuang.com/articles/2019_09_02-go_grpc_handshake.md.html
 			log.Fatalf(err.Error())
 		}
 

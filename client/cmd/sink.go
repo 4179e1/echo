@@ -16,23 +16,61 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
+	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 
+	pb "github.com/4179e1/echo/echopb"
 	"github.com/spf13/cobra"
 )
 
 // sinkCmd represents the sink command
 var sinkCmd = &cobra.Command{
 	Use:   "sink",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "sink command",
+	Long:  "sink command",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("sink called")
+		conn := getClientConn()
+		defer conn.Close()
+
+		client := pb.NewEchoServiceClient(conn)
+		stream, err := client.Sink(context.Background())
+		if err != nil {
+			panic(err)
+		}
+
+		reader := bufio.NewReader(os.Stdin)
+		for i := int32(1); ; i++ {
+			fmt.Printf("> ")
+			line, err := reader.ReadString('\n')
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				panic(err)
+			}
+
+			data := &pb.EchoRequest{
+				Index: i,
+				Msg:   strings.TrimSuffix(line, "\n"),
+			}
+
+			if err := stream.Send(data); err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
+
+		}
+
+		reply, err := stream.CloseAndRecv()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("\r")
+		fmt.Println(reply)
 	},
 }
 

@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -82,7 +83,7 @@ func init() {
 type echoService struct {
 }
 
-// curl -k -X POST https://localhost:8080/echo/api/v1/echo
+// curl -k -X POST "https://localhost:8080/echo/api/v1/echo" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{  \"index\": 0,  \"msg\": \"string\"}"
 func (*echoService) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoReply, error) {
 	//return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
 	reply := &pb.EchoReply{
@@ -92,6 +93,8 @@ func (*echoService) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoRepl
 
 	return reply, nil
 }
+
+// curl -k -X POST "https://localhost:8080/echo/api/v1/trico" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{  \"index\": 0,  \"msg\": \"string\"}"
 func (*echoService) Trico(req *pb.EchoRequest, srv pb.EchoService_TricoServer) error {
 	//return status.Errorf(codes.Unimplemented, "method Trico not implemented")
 
@@ -111,7 +114,35 @@ func (*echoService) Trico(req *pb.EchoRequest, srv pb.EchoService_TricoServer) e
 	return nil
 }
 func (*echoService) Sink(srv pb.EchoService_SinkServer) error {
-	return status.Errorf(codes.Unimplemented, "method Sink not implemented")
+	//return status.Errorf(codes.Unimplemented, "method Sink not implemented")
+
+	var buffer bytes.Buffer
+	delimiter := " "
+	firstDelimiter := true
+
+	for {
+		msg, err := srv.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		if firstDelimiter {
+			firstDelimiter = false
+		} else {
+			buffer.WriteString(delimiter)
+		}
+
+		if _, err := buffer.WriteString(msg.Msg); err != nil {
+			panic(err)
+		}
+	}
+
+	reply := &pb.EchoReply{
+		Index: 1,
+		Msg:   buffer.String(),
+	}
+
+	return srv.SendAndClose(reply)
 }
 
 func (*echoService) Chat(srv pb.EchoService_ChatServer) error {
